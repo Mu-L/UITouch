@@ -76,10 +76,11 @@ void UTouchWidget::BindTouchDelegate()
 		{
 			WidgetTouchComponent->AddObjectTouchs(this, TriggerIndex);
 		}
-		WidgetTouchComponent->DelegateBind(10, true, this, "NativeTouchIndexLocation");
-		FScriptDelegate ScriptDelegate; //建立对接变量
-		ScriptDelegate.BindUFunction(this, "ComponentDeactivated"); //对接变量绑定函数
-		WidgetTouchComponent->OnComponentDeactivated.Add(ScriptDelegate);
+		WidgetTouchComponent->DelegateBind(10, true, this, TEXT("NativeTouchIndexLocation"));
+		if (!WidgetTouchComponent->OnComponentDeactivated.IsAlreadyBound(this, &UTouchWidget::ComponentDeactivated))
+		{
+			WidgetTouchComponent->OnComponentDeactivated.AddDynamic(this, &UTouchWidget::ComponentDeactivated);
+		}
 		return;
 	}
 	if (GetWorld())
@@ -87,7 +88,7 @@ void UTouchWidget::BindTouchDelegate()
 		FLatentActionManager& LatentActionManager = GetWorld()->GetLatentActionManager();
 		FLatentActionInfo Latentinfo;
 		Latentinfo.CallbackTarget = this;
-		Latentinfo.ExecutionFunction = "BindTouchDelegate";
+		Latentinfo.ExecutionFunction = TEXT("BindTouchDelegate");
 		Latentinfo.Linkage = 0;
 		Latentinfo.UUID = UKismetMathLibrary::RandomIntegerInRange(0, 222);
 		LatentActionManager.AddNewAction(this, Latentinfo.UUID, new FDelayAction(0.2, Latentinfo));
@@ -102,10 +103,11 @@ void UTouchWidget::RemoveTouchDelegate(UTouchComponent* TouchComponent)
 		{
 			TouchComponent->RemoveObjectTouchs(this);
 		}
-		TouchComponent->DelegateBind(10, false, this, "NativeTouchIndexLocation");
-		FScriptDelegate ScriptDelegate; //建立对接变量
-		ScriptDelegate.BindUFunction(this, "ComponentDeactivated"); //对接变量绑定函数
-		TouchComponent->OnComponentDeactivated.Remove(ScriptDelegate);
+		TouchComponent->DelegateBind(10, false, this, TEXT("NativeTouchIndexLocation"));
+		if (TouchComponent->OnComponentDeactivated.IsAlreadyBound(this, &UTouchWidget::ComponentDeactivated))
+		{
+			TouchComponent->OnComponentDeactivated.RemoveDynamic(this, &UTouchWidget::ComponentDeactivated);
+		}
 		if (TouchComponent == WidgetTouchComponent)
 		{
 			WidgetTouchComponent = nullptr;
@@ -143,7 +145,7 @@ void UTouchWidget::SetIndexTouchDelegate(bool bDelegateBind, uint8 FingerIndex)
 {
 	if (GetWidgetTouchComponent())
 	{
-		WidgetTouchComponent->DelegateBind(FingerIndex, bDelegateBind, this, "TouchMovedLocation");
+		WidgetTouchComponent->DelegateBind(FingerIndex, bDelegateBind, this, TEXT("TouchMovedLocation"));
 	}
 }
 
